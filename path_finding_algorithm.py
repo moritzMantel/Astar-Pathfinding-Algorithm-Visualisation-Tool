@@ -7,6 +7,7 @@ pygame.init()
 class Grid:
     WIDTH = 800
     ROWS = 50
+    SCORE_FONT = pygame.font.Font(None, 40)
     
     def __init__(self):
         self.grid_width = self.WIDTH // self.ROWS
@@ -32,7 +33,7 @@ class Grid:
             for node in row:
                 node.update(self)
     
-    def draw(self, window):
+    def draw(self, window, text):
         window.fill(color.WHITE)
         # drawing all the nodes
         for col in self.grid:
@@ -46,6 +47,9 @@ class Grid:
         for i in range(self.ROWS):
             pygame.draw.line(window, color.BLACK, (0, i * self.grid_width), (self.WIDTH, i * self.grid_width), 3)
     
+        text = self.SCORE_FONT.render(text, False, color.VIOLET, color.WHITE)
+        window.blit(text, (self.WIDTH - text.get_width() - 20, 20 + text.get_height() // 2))
+
         pygame.display.update()
     
 
@@ -147,7 +151,8 @@ def h_score(current, goal):
     return abs(goal.row - current.row) + abs(goal.col - current.col)
 
         
-def algorithm(draw, start, goal, grid):
+def algorithm(start, goal, grid, window):
+    txt = "searching shortest path"
     count = 0
     open_set = PriorityQueue()
     open_set_hash = {start}
@@ -174,7 +179,10 @@ def algorithm(draw, start, goal, grid):
             while current in came_from:
                 current = came_from[current]
                 current.make_path()
-                draw()
+                grid.draw(window, "reconstructing path")
+            start.make_start()
+            goal.make_goal()
+            grid.draw(window, "path generated")
             return True
 
         for neighbor in current.neighbors:
@@ -194,10 +202,12 @@ def algorithm(draw, start, goal, grid):
         if current != start: 
             current.close()
 
-        draw()
+        grid.draw(window, txt)
 
-    print("there is no path")
+    grid.draw(window, "no path found")
+    pygame.time.delay(5000)
     return False # not path found
+
 
 
     
@@ -211,9 +221,10 @@ def main():
     start = False
     goal = False
     started = False
+    txt = "set start"
 
     while run:
-        grid.draw(window)
+        grid.draw(window, txt)
         
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -230,10 +241,12 @@ def main():
                     if not start and not node.is_wall(): #there isnt a start yet and we have not clicked a wall
                         node.make_start()
                         start = node
+                        txt = "set goal"
 
                     elif not goal and not node.is_start() and not node.is_wall(): #there is not yet a goal and we have not clicked a wall
                         node.make_goal()
                         goal = node
+                        txt = "draw walls"
                     elif not node.is_start() and not node.is_goal(): # if we have a start and goal
                         node.make_wall()
                     
@@ -254,9 +267,11 @@ def main():
                         if event.key == pygame.K_SPACE:
                             grid.update_grid() # setting all the neighbors with the walls in mind
                             started = True
-                            if not algorithm(lambda: grid.draw(window), start, goal, grid): #calling pathfinding algorithm
+                            if not algorithm(start, goal, grid, window): #calling pathfinding algorithm
                                 run = False
                                 break
+                            else:
+                                txt = "path generated"
                     
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_r: # quitting and calling main again makes a new window, which is reset
