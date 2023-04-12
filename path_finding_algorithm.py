@@ -104,22 +104,43 @@ class Node:
         if self.row < grid.ROWS - 1:
             node = grid.grid[self.row + 1][self.col] # neighbor to the right
             if not node.is_wall():
-                self.neighbors.append(node)
-        
+                self.neighbors.append((1, node)) #distance is 1
+            
+            if self.col < grid.ROWS - 1:
+                node = grid.grid[self.row + 1][self.col + 1] #neighbor bottom right
+                if not node.is_wall():
+                    self.neighbors.append((1.4, node)) #distance is approx sqrt(1 + 1) because diagonal
+
+            if self.col > 0:
+                node = grid.grid[self.row + 1][self.col - 1] #neighbor top right
+                if not node.is_wall():
+                    self.neighbors.append((1.4, node))
+
         if self.row > 0:
             node = grid.grid[self.row - 1][self.col] # neighbor to the left
             if not node.is_wall():
-                self.neighbors.append(node)
+                self.neighbors.append((1, node))
+
+            if self.col < grid.ROWS - 1:
+                node = grid.grid[self.row - 1][self.col + 1] #neighbor bottom left
+                if not node.is_wall():
+                    self.neighbors.append((1.4, node))
+            
+            if self.col > 0:
+                node = grid.grid[self.row - 1][self.col - 1] #neighbor top left
+                if not node.is_wall():
+                    self.neighbors.append((1.4, node))
 
         if self.col > 0:
-            node = grid.grid[self.row][self.col - 1] # upwards neighbor
+            node = grid.grid[self.row][self.col - 1] # top neighbor
             if not node.is_wall():
-                self.neighbors.append(node)
+                self.neighbors.append((1, node))
 
         if self.col < grid.ROWS - 1:
-            node = grid.grid[self.row][self.col + 1] # downwards neighbor
+            node = grid.grid[self.row][self.col + 1] # bottom neighbor
             if not node.is_wall():
-                self.neighbors.append(node)
+                self.neighbors.append((1, node))
+
 
 
 def h_score(current, goal):
@@ -157,7 +178,9 @@ def algorithm(draw, start, goal, grid):
             return True
 
         for neighbor in current.neighbors:
-            temp_g_score = g_scores[current] + 1 # because distance to neighbor is always one row/col
+            temp_g_score = g_scores[current] + neighbor[0] # distance (1 or 1.4 depending on straight or diagonal)
+            neighbor = neighbor[1]
+            
             if temp_g_score < g_scores[neighbor]:
                 came_from[neighbor] = current
                 g_scores[neighbor] = temp_g_score
@@ -190,6 +213,7 @@ def main():
     started = False
 
     while run:
+        grid.draw(window)
         
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -236,11 +260,8 @@ def main():
                     
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_r: # quitting and calling main again makes a new window, which is reset
-                    pygame.quit()
                     main()
                     break
-
-        grid.draw(window)
     
     pygame.quit()
 
